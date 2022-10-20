@@ -8,7 +8,7 @@ let page;
 let lastContent;
 
 async function main() {
-    const browser = await puppeteer.launch({ headless: false });
+    const browser = await puppeteer.launch();
     page = await browser.newPage();
     await page.goto(startUrl);
     await recursive();
