@@ -12,7 +12,10 @@ let first = true;
 let different = false;
 
 async function main() {
-    const browser = await puppeteer.launch({ headless: headless });
+    const browser = await puppeteer.launch({ 
+        headless: true,
+        args:["--no-sandbox"]
+    });
     page = await browser.newPage();
     await page.goto(startUrl);
     await recursive();
