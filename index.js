@@ -1,8 +1,20 @@
 import puppeteer from "puppeteer";
 import * as dotenv from 'dotenv';
 import twilio from "twilio";
+import { createLogger, format, transports } from "winston";
 dotenv.config();
 
+const logger = createLogger({
+    format: format.combine(
+        format.timestamp({
+            format: 'YYYY-MM-DD HH:mm:ss'
+        }),
+        format.json()
+    ),
+    transports: [
+        new transports.File({ filename: 'info.log' })
+    ]
+});
 const twilioClient = twilio(process.env.TWILIO_ACCOUNTSID, process.env.TWILIO_AUTHTOKEN);
 const startUrl = "https://ticketcenter.wacken.com/tickets/market";
 const headless = process.env.NODE_ENV || false;
@@ -55,11 +67,13 @@ async function timeout() {
         if(firstContent == content)
         {
             console.log("SAME");
+            logger.info("SAME");
             different = false;
         }
         else if (firstContent != content && !different)
         {
             console.log("DIFFERENT");
+            logger.info("DIFFERENT");
             twilioClient.messages
                 .create({
                     body: "TICKET AVAILABLE",
