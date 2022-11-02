@@ -1,32 +1,18 @@
 import puppeteer from "puppeteer";
 import * as dotenv from 'dotenv';
 import twilio from "twilio";
-import { createLogger, format, transports } from "winston";
 dotenv.config();
 
-const logger = createLogger({
-    format: format.combine(
-        format.timestamp({
-            format: 'YYYY-MM-DD HH:mm:ss'
-        }),
-        format.json()
-    ),
-    transports: [
-        new transports.File({ filename: 'info.log' })
-    ]
-});
 const twilioClient = twilio(process.env.TWILIO_ACCOUNTSID, process.env.TWILIO_AUTHTOKEN);
 const startUrl = "https://ticketcenter.wacken.com/tickets/market";
-const headless = process.env.NODE_ENV || false;
 let page;
-let firstContent;
-let first = true;
+let firstContent = null;
 let different = false;
 
 async function main() {
-    const browser = await puppeteer.launch({ 
-        headless: true,
-        args:["--no-sandbox"]
+    const browser = await puppeteer.launch({
+        headless: false,
+        args: ["--no-sandbox"]
     });
     page = await browser.newPage();
     await page.goto(startUrl);
@@ -49,39 +35,33 @@ async function recursive() {
                 await recursive();
             });
     }
-    else
-    {
+    else {
         setTimeout(timeout, 2000);
     }
 }
 
 async function timeout() {
-    if(page.url() == startUrl){
+    if (page.url() == startUrl) {
         const content = await page.content();
 
-        if(first){
-            first = false;
+        if (firstContent == null) {
             firstContent = content;
-        }
-        
-        if(firstContent == content)
-        {
-            console.log("SAME");
-            logger.info("SAME");
-            different = false;
-        }
-        else if (firstContent != content && !different)
-        {
-            console.log("DIFFERENT");
-            logger.info("DIFFERENT");
-            twilioClient.messages
-                .create({
-                    body: "TICKET AVAILABLE",
-                    messagingServiceSid: process.env.TWILIO_MESSAGINGSID,
-                    to: process.env.TWILIO_TO
-                })
-                .done();
-            different = true;
+        } else {
+            if (firstContent == content) {
+                console.log("SAME");
+                different = false;
+            }
+            else if (firstContent != content && !different) {
+                console.log("DIFFERENT");
+                twilioClient.messages
+                    .create({
+                        body: "TICKET AVAILABLE",
+                        messagingServiceSid: process.env.TWILIO_MESSAGINGSID,
+                        to: process.env.TWILIO_TO
+                    })
+                    .done();
+                different = true;
+            }
         }
     }
 
